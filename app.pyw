@@ -133,21 +133,37 @@ def salvar_config(cfg):
         print("Não salvei a configuração:", e)
 
 
-# ---------- paleta HUD roxa ----------
-BG = "#07050d"
-PAINEL = "#0d0a18"
-PAINEL2 = "#140f24"
-BORDA = "#2b1f4f"
-ROXO = "#a855f7"
+# ---------- paleta Clean Dark & Accent Din?mico ----------
+BG = "#0f1117"             # Cinza-chumbo profundo, elegante e neutro
+PAINEL = "#171922"         # Card com eleva??o sutil
+PAINEL2 = "#1f222e"        # Sub-card elevado
+BORDA = "#171922"          # Sem strokes vis?veis por padr?o (mesma cor do card)
+
+# Carrega cor de destaque configurada pelo usu?rio (padr?o Roxo)
+def _obter_destaque_config():
+    try:
+        with open(ARQ_CONFIG, encoding="utf-8") as f:
+            c = json.load(f).get("cor_destaque")
+            if c: return c
+    except Exception:
+        pass
+    return "#a855f7"
+
+ROXO = _obter_destaque_config()
 ROXO_CLARO = "#c4a1ff"
-ROXO_ESCURO = "#3b1d6e"
-LILAS = "#ede4ff"
-MUDO = "#7d6fa3"
-APAGADO = "#4a3f6b"
-ROSA = "#f472d0"
-VERDE = "#5ef0a0"
-AMBAR = "#fbbf24"
-VERMELHO = "#f87171"
+ROXO_ESCURO = "#2d1a4d"
+
+BRANCO = "#ffffff"
+CINZA_CLARO = "#e2e4ea"
+CINZA_MEDIO = "#9ca3af"
+CINZA_ESCURO = "#4b5563"
+LILAS = "#ffffff"          # Textos principais agora em Branco puro
+MUDO = "#9ca3af"           # Textos secund?rios em Cinza m?dio elegante
+APAGADO = "#6b7280"        # Detalhes discretos
+ROSA = "#ec4899"
+VERDE = "#10b981"
+AMBAR = "#f59e0b"
+VERMELHO = "#ef4444"
 MONO = "Consolas"
 SANS = "Segoe UI"
 
@@ -205,24 +221,23 @@ class Painel(ctk.CTkFrame):
     marcas = []
 
     def __init__(self, master, titulo, etiqueta="", icone=None, **kw):
-        super().__init__(master, fg_color=PAINEL, border_color=BORDA, border_width=1, corner_radius=4, **kw)
+        super().__init__(master, fg_color=PAINEL, border_width=0, corner_radius=10, **kw)
         topo = ctk.CTkFrame(self, fg_color="transparent")
-        topo.pack(fill="x", padx=12, pady=(8, 0))
+        topo.pack(fill="x", padx=14, pady=(10, 0))
         if icone is not None:
             self.lbl_icone = ctk.CTkLabel(topo, text="", image=icone, width=20, height=20)
         else:
             self.lbl_icone = ctk.CTkLabel(topo, text="◢", font=(MONO, 10), text_color=ROXO, width=14, height=18)
             Painel.marcas.append(self.lbl_icone)
         self.lbl_icone.pack(side="left", padx=(0, 6))
-        self.lbl_titulo = ctk.CTkLabel(topo, text=titulo.upper(), font=(MONO, 12, "bold"), text_color=ROXO_CLARO,
-                                       height=18)
+        self.lbl_titulo = ctk.CTkLabel(topo, text=titulo.upper(), font=(SANS, 12, "bold"), text_color="#ffffff", height=18)
         self.lbl_titulo.pack(side="left")
         self.direita = ctk.CTkFrame(topo, fg_color="transparent")
         self.direita.pack(side="right")
         self.etiqueta = ctk.CTkLabel(self.direita, text=etiqueta.upper(), font=(MONO, 9), text_color=APAGADO,
                                      height=18)
         self.etiqueta.pack(side="right")
-        ctk.CTkFrame(self, fg_color=BORDA, height=1).pack(fill="x", padx=12, pady=(6, 6))
+        ctk.CTkFrame(self, fg_color="#222533", height=1).pack(fill="x", padx=14, pady=(8, 8))
         self.corpo = ctk.CTkFrame(self, fg_color="transparent")
         self.corpo.pack(fill="both", expand=True, padx=12, pady=(0, 9))
 
@@ -281,7 +296,7 @@ class Nucleo(ctk.CTkCanvas):
         self._txt = None
         self._orb_cache = {}
         cx, cy = w / 2, h / 2
-        R = min(w, h) * 0.34
+        R = min(w, h) * 0.24
         self.R = R
         # brilho de fundo (halo)
         self.halo = []
@@ -394,7 +409,7 @@ class NucleoOrganico(ctk.CTkCanvas):
         self.teto = 660
 
     def _preparar(self, w, h):
-        tam = int(min(w * 0.9, h * 0.86, self.teto))
+        tam = int(min(w * 0.68, h * 0.64, self.teto * 0.72))
         tam -= tam % 2
         if tam < 80:
             return False
@@ -713,7 +728,7 @@ class BigPicture(ctk.CTkToplevel):
     # ---------------- layout (igual ao modo normal, em tamanho de TV) ----------------
     def _montar(self):
         # topo
-        cab = ctk.CTkFrame(self, fg_color=PAINEL, border_color=BORDA, border_width=1, corner_radius=0, height=86)
+        cab = ctk.CTkFrame(self, fg_color=PAINEL, border_width=0, corner_radius=0, height=86)
         cab.pack(fill="x")
         cab.pack_propagate(False)
         esq = ctk.CTkFrame(cab, fg_color="transparent")
@@ -798,7 +813,7 @@ class BigPicture(ctk.CTkToplevel):
                 g.grid_columnconfigure(k, weight=1, uniform="t")
 
         # ----- centro: o cérebro do Jon -----
-        moldura = ctk.CTkFrame(col_c, fg_color="transparent", border_color=BORDA, border_width=1, corner_radius=0)
+        moldura = ctk.CTkFrame(col_c, fg_color="transparent", border_width=0, corner_radius=0)
         moldura.pack(fill="both", expand=True)
         self.nucleo = (NucleoOrganico if ORGANICO else Nucleo)(moldura, self.app.clicou_mic)
         if ORGANICO:
@@ -1201,83 +1216,87 @@ class App(ctk.CTk):
     # ---------------- layout ----------------
     def _montar(self):
         # ===== cabeçalho =====
-        cab = ctk.CTkFrame(self, fg_color=PAINEL, border_color=BORDA, border_width=1, corner_radius=0, height=64)
+        # ===== cabe?alho clean minimalista =====
+        cab = ctk.CTkFrame(self, fg_color=PAINEL, border_width=0, corner_radius=0, height=60)
         cab.pack(fill="x")
         cab.pack_propagate(False)
-        logo = ctk.CTkFrame(cab, fg_color="transparent")
-        logo.pack(side="left", padx=18)
-        self.lbl_logo = ctk.CTkLabel(logo, text="◆", font=(SANS, 22), text_color=ROXO)
-        self.lbl_logo.pack(side="left", padx=(0, 12))
-        tt = ctk.CTkFrame(logo, fg_color="transparent")
-        tt.pack(side="left")
-        ctk.CTkLabel(tt, text=f"J  O  N   v{VERSAO}", font=(MONO, 18, "bold"), text_color=LILAS, height=22).pack(anchor="w")
-        ctk.CTkLabel(tt, text="SEU ASSISTENTE PESSOAL — UM SISTEMA BEM INTELIGENTE", font=(MONO, 9),
-                     text_color=MUDO, height=12).pack(anchor="w")
 
-        meio = ctk.CTkFrame(cab, fg_color="transparent")
-        meio.place(relx=0.5, rely=0.5, anchor="center")
-        b1 = ctk.CTkFrame(meio, fg_color="transparent")
-        b1.pack(side="left", padx=18)
-        ctk.CTkLabel(b1, text="STATUS DO SISTEMA", font=(MONO, 9), text_color=MUDO, height=12).pack()
-        self.lbl_sys = ctk.CTkLabel(b1, text="●  ÓTIMO", font=(MONO, 12, "bold"), text_color=ROXO_CLARO, height=18)
-        self.lbl_sys.pack()
-        b2 = ctk.CTkFrame(meio, fg_color="transparent")
-        b2.pack(side="left", padx=18)
-        ctk.CTkLabel(b2, text="HORA LOCAL", font=(MONO, 9), text_color=MUDO, height=12).pack()
-        self.lbl_hora = ctk.CTkLabel(b2, text="--:--:--", font=(MONO, 12, "bold"), text_color=LILAS, height=18)
-        self.lbl_hora.pack()
-        b3 = ctk.CTkFrame(meio, fg_color="transparent")
-        b3.pack(side="left", padx=18)
-        ctk.CTkLabel(b3, text="NÚCLEO DE IA", font=(MONO, 9), text_color=MUDO, height=12).pack()
-        l = ctk.CTkFrame(b3, fg_color="transparent")
-        l.pack()
-        self.ponto_ia = ctk.CTkLabel(l, text="●", text_color=APAGADO, font=(SANS, 11), width=10, height=18)
+        # Lado Esquerdo: Logo, Rel?gio e Status agrupados harmonicamente
+        esq_topo = ctk.CTkFrame(cab, fg_color="transparent")
+        esq_topo.pack(side="left", padx=18)
+        
+        logo = ctk.CTkFrame(esq_topo, fg_color="transparent")
+        logo.pack(side="left")
+        self.lbl_logo = ctk.CTkLabel(logo, text="?", font=(SANS, 20), text_color=ROXO)
+        self.lbl_logo.pack(side="left", padx=(0, 8))
+        ctk.CTkLabel(logo, text=f"JON v{VERSAO}", font=(SANS, 14, "bold"), text_color="#ffffff").pack(side="left")
+
+        # Divisor suave
+        ctk.CTkLabel(esq_topo, text="|", font=(SANS, 14), text_color="#2c3040").pack(side="left", padx=14)
+
+        # Hora e Status
+        self.lbl_hora = ctk.CTkLabel(esq_topo, text="--:--:--", font=(MONO, 12, "bold"), text_color="#ffffff")
+        self.lbl_hora.pack(side="left", padx=(0, 14))
+
+        self.lbl_sys = ctk.CTkLabel(esq_topo, text="? ?TIMO", font=(SANS, 11, "bold"), text_color="#10b981")
+        self.lbl_sys.pack(side="left", padx=(0, 14))
+
+        # Status IA
+        self.ponto_ia = ctk.CTkLabel(esq_topo, text="?", text_color="#10b981", font=(SANS, 10))
         self.ponto_ia.pack(side="left")
-        self.lbl_ia = ctk.CTkLabel(l, text="VERIFICANDO…", font=(MONO, 12, "bold"), text_color=LILAS, height=18)
-        self.lbl_ia.pack(side="left", padx=(4, 0))
-        b4 = ctk.CTkFrame(meio, fg_color="transparent")
-        b4.pack(side="left", padx=18)
-        ctk.CTkLabel(b4, text="MÃOS-LIVRES", font=(MONO, 9), text_color=MUDO, height=12).pack()
-        self.sw_ml = ctk.CTkSwitch(b4, text="“Jon, …”", font=(MONO, 10), text_color=LILAS, progress_color=ROXO,
-                                   button_color=ROXO_CLARO, fg_color=ROXO_ESCURO, command=self.trocar_maos_livres,
+        self.lbl_ia = ctk.CTkLabel(esq_topo, text="IA PRONTA", font=(SANS, 11, "bold"), text_color="#e2e4ea")
+        self.lbl_ia.pack(side="left", padx=(4, 14))
+
+        # Switch m?os livres
+        self.sw_ml = ctk.CTkSwitch(esq_topo, text="M?os-livres", font=(SANS, 11), text_color="#9ca3af",
+                                   progress_color=ROXO, fg_color="#2c3040", command=self.trocar_maos_livres,
                                    height=18, switch_width=32, switch_height=16)
-        self.sw_ml.pack()
-        if self.cfg["maos_livres"]:
+        self.sw_ml.pack(side="left")
+        if self.cfg.get("maos_livres"):
             self.sw_ml.select()
 
+        # Lado Direito: A??es r?pidas, Color Picker e Perfil
         dir_ = ctk.CTkFrame(cab, fg_color="transparent")
-        dir_.pack(side="right", padx=14)
-        # aparece só quando o GitHub tem uma versão nova
-        self.bt_atualizar = ctk.CTkButton(dir_, text="⬇  ATUALIZAÇÃO", width=130, height=30, corner_radius=15,
-                                          fg_color=ROSA, hover_color=ROXO_CLARO, text_color="#0b0716",
-                                          font=(MONO, 10, "bold"), command=self.mostrar_atualizacao)
-        self._info_atualizacao = None
-        self._primeiro_botao_topo = ctk.CTkButton(dir_, text="\uE8BD", width=34, height=34, corner_radius=17,
-                                                  fg_color="transparent", border_width=1, border_color=BORDA,
-                                                  hover_color=PAINEL2, text_color=ROXO_CLARO, font=(ICO, 13),
-                                                  command=self.mostrar_chat)
-        self._primeiro_botao_topo.pack(side="left", padx=4)
-        ctk.CTkButton(dir_, text="?", width=34, height=34, corner_radius=17, fg_color="transparent",
-                      border_width=1, border_color=BORDA, hover_color=PAINEL2, text_color=ROXO_CLARO,
-                      font=(MONO, 14, "bold"), command=self.mostrar_exemplos).pack(side="left", padx=4)
-        ctk.CTkButton(dir_, text="\uE740", width=34, height=34, corner_radius=17, fg_color="transparent",
-                      border_width=1, border_color=BORDA, hover_color=PAINEL2, text_color=ROXO_CLARO,
-                      font=(ICO, 13), command=lambda: self.big_picture(True)).pack(side="left", padx=4)
-        ctk.CTkButton(dir_, text="\uE8BC", width=34, height=34, corner_radius=17, fg_color="transparent",
-                      border_width=1, border_color=BORDA, hover_color=PAINEL2, text_color=ROXO_CLARO,
-                      font=(ICO, 13), command=self.mostrar_memoria).pack(side="left", padx=4)
-        ctk.CTkButton(dir_, text="⚙", width=34, height=34, corner_radius=17, fg_color="transparent",
-                      border_width=1, border_color=BORDA, hover_color=PAINEL2, text_color=ROXO_CLARO,
-                      font=(SANS, 15), command=self.mostrar_config).pack(side="left", padx=4)
-        chip = ctk.CTkFrame(dir_, fg_color=PAINEL2, border_color=BORDA, border_width=1, corner_radius=20)
-        chip.pack(side="left", padx=(10, 0))
-        self.lbl_dono = ctk.CTkLabel(chip, text=(self.cfg.get("nome") or "JON").upper()[:18], font=(MONO, 12, "bold"),
-                                     text_color=LILAS)
-        self.lbl_dono.pack(side="left",
-                                                                                              padx=(14, 8), pady=6)
-        ctk.CTkLabel(chip, text="●", font=(SANS, 20), text_color=ROXO).pack(side="left", padx=(0, 10))
+        dir_.pack(side="right", padx=16)
 
-        # linha de varredura (dá vida ao topo, custa quase nada)
+        self.bt_atualizar = ctk.CTkButton(dir_, text="? ATUALIZA??O", width=120, height=28, corner_radius=14,
+                                          fg_color=ROSA, hover_color=ROXO, text_color="#ffffff",
+                                          font=(SANS, 11, "bold"), command=self.mostrar_atualizacao)
+        self._info_atualizacao = None
+
+        # Bot?o Color Picker (Seletor Manual de Cor)
+        ctk.CTkButton(dir_, text="??", width=32, height=32, corner_radius=8, fg_color="transparent",
+                      hover_color=PAINEL2, text_color="#ffffff", font=(SANS, 14),
+                      command=self.abrir_seletor_cor).pack(side="left", padx=3)
+
+        self._primeiro_botao_topo = ctk.CTkButton(dir_, text="??", width=32, height=32, corner_radius=8,
+                                                  fg_color="transparent", hover_color=PAINEL2, text_color="#ffffff",
+                                                  font=(SANS, 14), command=self.mostrar_chat)
+        self._primeiro_botao_topo.pack(side="left", padx=3)
+
+        ctk.CTkButton(dir_, text="?", width=32, height=32, corner_radius=8, fg_color="transparent",
+                      hover_color=PAINEL2, text_color="#ffffff", font=(SANS, 13),
+                      command=self.mostrar_exemplos).pack(side="left", padx=3)
+
+        ctk.CTkButton(dir_, text="??", width=32, height=32, corner_radius=8, fg_color="transparent",
+                      hover_color=PAINEL2, text_color="#ffffff", font=(SANS, 13),
+                      command=lambda: self.big_picture(True)).pack(side="left", padx=3)
+
+        ctk.CTkButton(dir_, text="??", width=32, height=32, corner_radius=8, fg_color="transparent",
+                      hover_color=PAINEL2, text_color="#ffffff", font=(SANS, 13),
+                      command=self.mostrar_memoria).pack(side="left", padx=3)
+
+        ctk.CTkButton(dir_, text="?", width=32, height=32, corner_radius=8, fg_color="transparent",
+                      hover_color=PAINEL2, text_color="#ffffff", font=(SANS, 14),
+                      command=self.mostrar_config).pack(side="left", padx=3)
+
+        chip = ctk.CTkFrame(dir_, fg_color=PAINEL2, border_width=0, corner_radius=16)
+        chip.pack(side="left", padx=(10, 0))
+        self.lbl_dono = ctk.CTkLabel(chip, text=(self.cfg.get("nome") or "JON").upper()[:16],
+                                     font=(SANS, 11, "bold"), text_color="#ffffff")
+        self.lbl_dono.pack(side="left", padx=(12, 6), pady=4)
+        ctk.CTkLabel(chip, text="?", font=(SANS, 12), text_color=ROXO).pack(side="left", padx=(0, 10))
+
         self.varredura = ctk.CTkCanvas(self, height=2, bg=BG, highlightthickness=0)
         self.varredura.pack(fill="x")
         self._var_itens = [self.varredura.create_line(0, 1, 0, 1, fill=mix(BG, ROXO, k / 6), width=2)
@@ -1345,7 +1364,7 @@ class App(ctk.CTk):
         self.agenda = ctk.CTkFrame(p.corpo, fg_color="transparent")     # (a agenda agora fica no cartão "Próximo")
 
         # ----- centro: núcleo -----
-        moldura = ctk.CTkFrame(cen, fg_color="transparent", border_color=BORDA, border_width=1, corner_radius=0)
+        moldura = ctk.CTkFrame(cen, fg_color="transparent", border_width=0, corner_radius=0)
         moldura.pack(fill="both", expand=True)
         self.cen_moldura = moldura
         self.nucleo_container = ctk.CTkFrame(moldura, fg_color="transparent")
@@ -1372,7 +1391,7 @@ class App(ctk.CTk):
         self.card_mail = self._card(faixa, 2, "", "E-MAIL", "não conectado", "clique para conectar",
                                     self.clicou_card_email)
         # terminal (digitar comandos)
-        term = ctk.CTkFrame(moldura, fg_color=PAINEL, border_color=BORDA, border_width=1, corner_radius=4)
+        term = ctk.CTkFrame(moldura, fg_color=PAINEL, border_width=0, corner_radius=8)
         term.pack(fill="x", padx=20, pady=(10, 14))
         ctk.CTkLabel(term, text=">_", font=(MONO, 14, "bold"), text_color=ROXO).pack(side="left", padx=(12, 6))
         ctk.CTkButton(term, text="💬  CONVERSAR COM A IA", height=28, corner_radius=4, fg_color=ROXO_ESCURO,
@@ -1512,7 +1531,7 @@ class App(ctk.CTk):
         self._desenhar_dl()
 
     def _mini(self, master, rot, val):
-        f = ctk.CTkFrame(master, fg_color=PAINEL2, border_color=BORDA, border_width=1, corner_radius=4)
+        f = ctk.CTkFrame(master, fg_color=PAINEL2, border_width=0, corner_radius=8)
         f.pack(side="left", fill="x", expand=True, padx=(0, 6))
         ctk.CTkLabel(f, text=rot, font=(MONO, 9), text_color=MUDO, height=12).pack(anchor="w", padx=8, pady=(6, 0))
         lbl = ctk.CTkLabel(f, text=val, font=(MONO, 12, "bold"), text_color=ROXO_CLARO, height=18)
@@ -1520,23 +1539,35 @@ class App(ctk.CTk):
         return lbl
 
     def _tile(self, master, glifo, rotulo, acao, imagem=None):
-        """Quadradinho clicável: ícone em cima, nome embaixo."""
-        f = ctk.CTkFrame(master, fg_color=PAINEL2, border_color=BORDA, border_width=1, corner_radius=4, height=52,
-                         cursor="hand2")
+        """Quadradinho Clean: monocrom?tico moderno com eleva??o sutil e hover no accent."""
+        f = ctk.CTkFrame(master, fg_color=PAINEL2, border_width=0, corner_radius=8, height=54, cursor="hand2")
         f.pack_propagate(False)
-        if imagem is not None:
-            ic = ctk.CTkLabel(f, text="", image=imagem, height=26, cursor="hand2")
+        img_mono = None
+        if imagem is not None and getattr(imagem, "_light_image", None):
+            try:
+                raw = imagem._light_image.convert("L").convert("RGBA")
+                img_mono = ctk.CTkImage(raw, size=(22, 22))
+            except Exception:
+                img_mono = imagem
+
+        if img_mono is not None:
+            ic = ctk.CTkLabel(f, text="", image=img_mono, height=24, cursor="hand2")
         else:
-            ic = ctk.CTkLabel(f, text=glifo, font=(ICO, 15), text_color=ROXO_CLARO, height=24, cursor="hand2")
-        ic.pack(pady=(5, 0))
-        tx = ctk.CTkLabel(f, text=rotulo, font=(MONO, 9), text_color=LILAS, height=14, cursor="hand2")
+            ic = ctk.CTkLabel(f, text=glifo, font=(ICO, 14), text_color="#d1d5db", height=24, cursor="hand2")
+        ic.pack(pady=(6, 0))
+        tx = ctk.CTkLabel(f, text=rotulo, font=(SANS, 9), text_color="#9ca3af", height=14, cursor="hand2")
         tx.pack()
 
         def entrar(_):
-            f.configure(fg_color=ROXO_ESCURO, border_color=ROXO)
+            f.configure(fg_color="#282c3c")
+            if img_mono is None: ic.configure(text_color=ROXO)
+            tx.configure(text_color="#ffffff")
 
         def sair(_):
-            f.configure(fg_color=PAINEL2, border_color=BORDA)
+            f.configure(fg_color=PAINEL2)
+            if img_mono is None: ic.configure(text_color="#d1d5db")
+            tx.configure(text_color="#9ca3af")
+
         for w in (f, ic, tx):
             w.bind("<Button-1>", lambda e: acao())
             w.bind("<Enter>", entrar)
@@ -1544,7 +1575,7 @@ class App(ctk.CTk):
         return f
 
     def _card(self, master, col, glifo, titulo, valor, sub, acao):
-        f = ctk.CTkFrame(master, fg_color=PAINEL, border_color=BORDA, border_width=1, corner_radius=6,
+        f = ctk.CTkFrame(master, fg_color=PAINEL, border_width=0, corner_radius=6,
                          cursor="hand2")
         f.grid(row=0, column=col, sticky="nsew", padx=4)
         topo = ctk.CTkFrame(f, fg_color="transparent")
@@ -2205,7 +2236,7 @@ class App(ctk.CTk):
                 anchor="w", pady=(0, 4))
 
     def _item(self, sf, texto, ao_apagar=None):
-        fr = ctk.CTkFrame(sf, fg_color=PAINEL, border_color=BORDA, border_width=1, corner_radius=4)
+        fr = ctk.CTkFrame(sf, fg_color=PAINEL, border_width=0, corner_radius=8)
         fr.pack(fill="x", pady=2)
         ctk.CTkLabel(fr, text=texto, font=(SANS, 12), text_color=LILAS, wraplength=320, justify="left",
                      anchor="w").pack(side="left", padx=10, pady=6, fill="x", expand=True)
@@ -2233,11 +2264,14 @@ class App(ctk.CTk):
         self._chat_entrada.focus_set()
 
     def fechar_chat(self):
-        """Fecha a ?rea de chat e restaura imediatamente o n?cleo (bola central) com anima??o."""
+        """Fecha a ?rea de chat e restaura o n?cleo e a barra de comandos exatamente na posi??o original."""
         self._chat_ativo = False
         if hasattr(self, "_chat_frame_central") and self._chat_frame_central is not None:
             self._chat_frame_central.pack_forget()
         self.nucleo_container.pack(fill="both", expand=True)
+        # Garante foco no campo de entrada inferior
+        if hasattr(self, "entrada") and self.entrada.winfo_exists():
+            self.entrada.focus_set()
 
     def _criar_chat_central(self):
         """Cria o painel de chat diretamente no centro da janela principal do Jon."""
@@ -2254,7 +2288,7 @@ class App(ctk.CTk):
         cf.pack(fill="both", expand=True)
 
         # Barra lateral esquerda: Projects / T?picos (estilo Antigravity)
-        lat = ctk.CTkFrame(cf, fg_color="#0e081c", width=220, corner_radius=0, border_color=BORDA, border_width=1)
+        lat = ctk.CTkFrame(cf, fg_color="#0e081c", width=220, corner_radius=0, border_width=0)
         lat.pack(side="left", fill="y")
         lat.pack_propagate(False)
 
@@ -2272,7 +2306,7 @@ class App(ctk.CTk):
         area_msg = ctk.CTkFrame(cf, fg_color=BG, corner_radius=0)
         area_msg.pack(side="right", fill="both", expand=True)
 
-        topo = ctk.CTkFrame(area_msg, fg_color=PAINEL, border_color=BORDA, border_width=1, corner_radius=0, height=44)
+        topo = ctk.CTkFrame(area_msg, fg_color=PAINEL, border_width=0, corner_radius=0, height=44)
         topo.pack(fill="x")
         topo.pack_propagate(False)
         ctk.CTkLabel(topo, text="?", font=(SANS, 16), text_color=ROXO).pack(side="left", padx=(10, 6))
@@ -2289,11 +2323,11 @@ class App(ctk.CTk):
         ctk.CTkButton(topo, text="LIMPAR", width=56, height=22, fg_color="transparent", border_width=1,
                       border_color=BORDA, hover_color=PAINEL2, text_color=ROXO_CLARO, font=(MONO, 8, "bold"),
                       command=self._chat_limpar).pack(side="right", padx=3)
-        ctk.CTkButton(topo, text="?? PASTA", width=75, height=22, fg_color="transparent", border_width=1,
-                      border_color=BORDA, hover_color=PAINEL2, text_color=LILAS, font=(MONO, 8, "bold"),
+        ctk.CTkButton(topo, text="?? PASTA", width=78, height=24, fg_color="transparent", border_width=1,
+                      border_color="#2c3040", hover_color=PAINEL2, text_color="#ffffff", font=(SANS, 9, "bold"),
                       command=self._chat_selecionar_pasta).pack(side="right", padx=3)
-        ctk.CTkButton(topo, text="?? FOTO", width=68, height=22, fg_color="transparent", border_width=1,
-                      border_color=BORDA, hover_color=PAINEL2, text_color=LILAS, font=(MONO, 8, "bold"),
+        ctk.CTkButton(topo, text="?? FOTO", width=70, height=24, fg_color="transparent", border_width=1,
+                      border_color="#2c3040", hover_color=PAINEL2, text_color="#ffffff", font=(SANS, 9, "bold"),
                       command=self._chat_anexar_foto).pack(side="right", padx=3)
 
         self._chat_txt = ctk.CTkTextbox(area_msg, fg_color=BG, font=(SANS, 13), text_color=LILAS, wrap="word",
@@ -2309,7 +2343,7 @@ class App(ctk.CTk):
         tb.tag_config("info", foreground=MUDO, font=(SANS, 11, "italic"), lmargin1=14, lmargin2=14, spacing1=4)
         tb.tag_config("erro", foreground=VERMELHO, font=(SANS, 12), lmargin1=14, lmargin2=14)
 
-        base = ctk.CTkFrame(area_msg, fg_color=PAINEL, border_color=BORDA, border_width=1, corner_radius=6)
+        base = ctk.CTkFrame(area_msg, fg_color=PAINEL, border_width=0, corner_radius=6)
         base.pack(fill="x", padx=10, pady=(2, 6))
         self._chat_entrada = ctk.CTkTextbox(base, height=50, fg_color=PAINEL, border_width=0, text_color=LILAS,
                                             font=(SANS, 12), wrap="word")
@@ -2330,7 +2364,7 @@ class App(ctk.CTk):
         self.after(50, self._chat_loop)
 
     def _chat_renderizar_lateral(self):
-        """Desenha a lista de pastas e t?picos na barra lateral estilo Antigravity."""
+        """Desenha a lista de pastas e t?picos na barra lateral com op??o de exclus?o e renomear."""
         if not hasattr(self, "_chat_lista_frame"):
             return
         for w in self._chat_lista_frame.winfo_children():
@@ -2339,26 +2373,62 @@ class App(ctk.CTk):
         for proj in self._chat_topicos_dados.get("projetos", []):
             p_box = ctk.CTkFrame(self._chat_lista_frame, fg_color="transparent")
             p_box.pack(fill="x", pady=(6, 1), padx=2)
-            ctk.CTkLabel(p_box, text=f"??  {proj['nome']}", font=(SANS, 11, "bold"),
+            ctk.CTkLabel(p_box, text=f"?? {proj['nome']}", font=(SANS, 11, "bold"),
                          text_color="#a09cb0", anchor="w").pack(side="left", padx=2)
+            
+            # Bot?o lixeira para excluir projeto inteiro (se n?o for o ?nico)
+            btn_del_p = ctk.CTkButton(p_box, text="?", width=18, height=18, fg_color="transparent",
+                                      hover_color="#3a1d2a", text_color="#ef4444", font=(SANS, 10),
+                                      command=lambda pnome=proj["nome"]: self._chat_excluir_projeto(pnome))
+            btn_del_p.pack(side="right", padx=2)
 
             for top in proj.get("topicos", []):
                 ativo = (top["id"] == self._chat_topico_id)
-                cor_bg = "#22193b" if ativo else "transparent"
-                cor_txt = "#ffffff" if ativo else "#62a0ea"
+                cor_bg = "#222533" if ativo else "transparent"
+                cor_txt = "#ffffff" if ativo else "#9ca3af"
+
+                t_row = ctk.CTkFrame(self._chat_lista_frame, fg_color=cor_bg, corner_radius=6)
+                t_row.pack(fill="x", padx=4, pady=1)
+
                 btn_top = ctk.CTkButton(
-                    self._chat_lista_frame,
-                    text=f"  {top['titulo'][:22]}",
+                    t_row,
+                    text=f" {top['titulo'][:20]}",
                     anchor="w",
-                    fg_color=cor_bg,
-                    hover_color="#1d1433",
+                    fg_color="transparent",
+                    hover_color="#282c3c",
                     text_color=cor_txt,
                     font=(SANS, 11, "bold" if ativo else "normal"),
                     height=26,
-                    corner_radius=4,
                     command=lambda tid=top["id"]: self._chat_abrir_topico(tid)
                 )
-                btn_top.pack(fill="x", padx=4, pady=1)
+                btn_top.pack(side="left", fill="x", expand=True)
+
+                btn_del_t = ctk.CTkButton(
+                    t_row, text="?", width=20, height=20, fg_color="transparent",
+                    hover_color="#3a1d2a", text_color="#ef4444", font=(SANS, 9),
+                    command=lambda tid=top["id"]: self._chat_excluir_topico(tid)
+                )
+                btn_del_t.pack(side="right", padx=(0, 4))
+
+    def _chat_excluir_projeto(self, pnome):
+        if len(self._chat_topicos_dados.get("projetos", [])) <= 1:
+            return
+        chat_topicos_mgr.excluir_projeto(self._chat_topicos_dados, pnome)
+        _, top = chat_topicos_mgr.obter_topico_ativo(self._chat_topicos_dados)
+        self._chat_topico_id = top["id"]
+        self._chat_hist = top.get("mensagens", [])
+        self._chat_titulo_label.configure(text=top["titulo"].upper())
+        self._chat_renderizar_lateral()
+        self._chat_carregar_historico_na_tela()
+
+    def _chat_excluir_topico(self, topico_id):
+        chat_topicos_mgr.excluir_topico(self._chat_topicos_dados, topico_id)
+        _, top = chat_topicos_mgr.obter_topico_ativo(self._chat_topicos_dados)
+        self._chat_topico_id = top["id"]
+        self._chat_hist = top.get("mensagens", [])
+        self._chat_titulo_label.configure(text=top["titulo"].upper())
+        self._chat_renderizar_lateral()
+        self._chat_carregar_historico_na_tela()
 
     def _chat_abrir_topico(self, topico_id):
         if self._chat_ocupado:
@@ -2497,7 +2567,9 @@ class App(ctk.CTk):
                     av.falar(resp_acao)
                     fila.put(("fim", "⚡ " + resp_acao))
                     return
-                resp = ia_local.conversar(hist, lambda parcial: fila.put(("parcial", parcial)))
+                if not ia_local.disponivel():
+                    ia_local.aquecer()
+                resp = ia_local.conversar(hist, lambda parcial: fila.put(('parcial', parcial)))
                 fila.put(("fim", resp or "(sem resposta)"))
             except Exception as e:
                 fila.put(("erro", f"Não consegui falar com a IA: {e}"))
@@ -2586,6 +2658,64 @@ class App(ctk.CTk):
         ctk.CTkButton(j, text="MEU PERFIL (NOME, CIDADE, SPOTIFY)", fg_color=PAINEL2, border_width=1,
                       border_color=BORDA, hover_color=ROXO_ESCURO, text_color=ROXO_CLARO, font=(MONO, 11, "bold"),
                       command=lambda: (j.destroy(), self.boas_vindas(False))).pack(pady=(0, 10))
+
+    # ---------------- seletor de cor de destaque ----------------
+    def abrir_seletor_cor(self):
+        """Janela moderna para escolher manualmente a cor de destaque (Accent Color)."""
+        j = ctk.CTkToplevel(self)
+        j.title("Cor de Destaque")
+        j.geometry("340x260")
+        j.resizable(False, False)
+        j.configure(fg_color=BG)
+        j.transient(self)
+
+        ctk.CTkLabel(j, text="PALETA DE DESTAQUE", font=(SANS, 13, "bold"), text_color="#ffffff").pack(pady=(16, 4))
+        ctk.CTkLabel(j, text="Escolha a cor principal para brilho, barras e bot?es:", font=(SANS, 10),
+                     text_color=MUDO).pack(pady=(0, 14))
+
+        grade = ctk.CTkFrame(j, fg_color="transparent")
+        grade.pack(padx=20, pady=6)
+
+        cores = [
+            ("Roxo Cl?ssico", "#a855f7"),
+            ("Ciano Neon", "#06b6d4"),
+            ("Azul El?trico", "#3b82f6"),
+            ("Esmeralda", "#10b981"),
+            ("?mbar Dourado", "#f59e0b"),
+            ("Vermelho Rubi", "#ef4444"),
+            ("Rosa Cyber", "#ec4899"),
+            ("Laranja Vivo", "#f97316")
+        ]
+
+        for k, (nome_cor, hex_cor) in enumerate(cores):
+            r = k // 4
+            c = k % 4
+            btn = ctk.CTkButton(grade, text="", width=54, height=38, corner_radius=8,
+                                fg_color=hex_cor, hover_color="#ffffff",
+                                command=lambda cor=hex_cor: self.aplicar_cor_destaque(cor, j))
+            btn.grid(row=r, column=c, padx=6, pady=6)
+
+    def aplicar_cor_destaque(self, nova_cor, janela_jan=None):
+        global ROXO, ROXO_CLARO, ROXO_ESCURO
+        ROXO = nova_cor
+        ROXO_CLARO = mix(nova_cor, "#ffffff", 0.3)
+        ROXO_ESCURO = mix(nova_cor, "#000000", 0.6)
+
+        # Salva no config.json
+        self.cfg["cor_destaque"] = nova_cor
+        salvar_config(self.cfg)
+
+        # Atualiza elementos din?micos na hora
+        self.lbl_logo.configure(text_color=ROXO)
+        self.sw_ml.configure(progress_color=ROXO)
+        if hasattr(self, "recursos"):
+            for n, it in self.recursos.itens.items():
+                self.recursos.itemconfig(it[2], fill=ROXO)
+        if hasattr(self, "nucleo"):
+            self.nucleo._estado_cor = None
+
+        if janela_jan:
+            janela_jan.destroy()
 
     def boas_vindas(self, primeira=True):
         """Primeira vez (ou ⚙ > Meu perfil): nome, cidade e Spotify do dono deste Jon."""

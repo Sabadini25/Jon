@@ -13,25 +13,6 @@ ARQ_TOPICOS = os.path.join(PASTA, "chat_topicos.json")
 
 
 def carregar_dados():
-    """
-    Estrutura:
-    {
-        "ativo_id": "uuid-da-conversa",
-        "projetos": [
-            {
-                "nome": "Jon",
-                "topicos": [
-                    {
-                        "id": "uuid...",
-                        "titulo": "O Que É Este Projeto",
-                        "criado_em": "2026-11-04 23:55",
-                        "mensagens": [{"role": "user", "content": "..."}, ...]
-                    }
-                ]
-            }
-        ]
-    }
-    """
     if os.path.exists(ARQ_TOPICOS):
         try:
             with open(ARQ_TOPICOS, "r", encoding="utf-8") as f:
@@ -39,7 +20,6 @@ def carregar_dados():
         except Exception:
             pass
 
-    # Estrutura inicial padrão espelhada no Antigravity do usuário
     novo_id = str(uuid.uuid4())
     dados_padrao = {
         "ativo_id": novo_id,
@@ -97,7 +77,6 @@ def obter_topico_ativo(dados):
         for top in proj.get("topicos", []):
             if top.get("id") == ativo_id:
                 return proj, top
-    # Se não achou, pega o primeiro ou cria
     if dados.get("projetos") and dados["projetos"][0].get("topicos"):
         primeiro = dados["projetos"][0]["topicos"][0]
         dados["ativo_id"] = primeiro["id"]
@@ -114,8 +93,6 @@ def criar_topico(dados, nome_projeto="Jon", titulo="Nova Conversa"):
         "criado_em": time.strftime("%Y-%m-%d %H:%M"),
         "mensagens": []
     }
-    
-    # Busca o projeto
     proj_encontrado = None
     for proj in dados.get("projetos", []):
         if proj["nome"].lower() == nome_projeto.lower():
@@ -132,12 +109,48 @@ def criar_topico(dados, nome_projeto="Jon", titulo="Nova Conversa"):
     return proj_encontrado, topico
 
 
+def excluir_topico(dados, topico_id):
+    """Exclui um tópico/chat específico."""
+    for proj in dados.get("projetos", []):
+        for i, top in enumerate(proj.get("topicos", [])):
+            if top.get("id") == topico_id:
+                proj["topicos"].pop(i)
+                # Se era o ativo, muda para outro
+                if dados.get("ativo_id") == topico_id:
+                    proj_ativo, top_ativo = obter_topico_ativo(dados)
+                    dados["ativo_id"] = top_ativo["id"]
+                salvar_dados(dados)
+                return True
+    return False
+
+
+def excluir_projeto(dados, nome_projeto):
+    """Exclui uma pasta/projeto inteira com seus tópicos."""
+    for i, proj in enumerate(dados.get("projetos", [])):
+        if proj.get("nome", "").lower() == nome_projeto.lower():
+            dados["projetos"].pop(i)
+            proj_ativo, top_ativo = obter_topico_ativo(dados)
+            dados["ativo_id"] = top_ativo["id"]
+            salvar_dados(dados)
+            return True
+    return False
+
+
+def renomear_topico(dados, topico_id, novo_titulo):
+    for proj in dados.get("projetos", []):
+        for top in proj.get("topicos", []):
+            if top.get("id") == topico_id:
+                top["titulo"] = novo_titulo.strip()
+                salvar_dados(dados)
+                return True
+    return False
+
+
 def salvar_mensagens_topico(dados, topico_id, mensagens):
     for proj in dados.get("projetos", []):
         for top in proj.get("topicos", []):
             if top.get("id") == topico_id:
                 top["mensagens"] = mensagens
-                # Se ainda for o título padrão e tiver mensagens, gera um título inteligente
                 if top["titulo"] in ("Nova Conversa", "O Que É Este Projeto") and mensagens:
                     for m in mensagens:
                         if m.get("role") == "user" and m.get("content"):
