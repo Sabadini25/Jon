@@ -1347,19 +1347,22 @@ class App(ctk.CTk):
         # ----- centro: núcleo -----
         moldura = ctk.CTkFrame(cen, fg_color="transparent", border_color=BORDA, border_width=1, corner_radius=0)
         moldura.pack(fill="both", expand=True)
-        self.nucleo = (NucleoOrganico if ORGANICO else Nucleo)(moldura, self.clicou_mic)
+        self.cen_moldura = moldura
+        self.nucleo_container = ctk.CTkFrame(moldura, fg_color="transparent")
+        self.nucleo_container.pack(fill="both", expand=True)
+        self.nucleo = (NucleoOrganico if ORGANICO else Nucleo)(self.nucleo_container, self.clicou_mic)
         self.nucleo.pack(fill="both", expand=True, padx=20, pady=(12, 0))
-        self.onda = Onda(moldura)
+        self.onda = Onda(self.nucleo_container)
         self.onda.pack(pady=(2, 2))
-        self.pilula = ctk.CTkButton(moldura, text="🎙   AGUARDANDO COMANDO…", height=34, corner_radius=17,
+        self.pilula = ctk.CTkButton(self.nucleo_container, text="🎙   AGUARDANDO COMANDO…", height=34, corner_radius=17,
                                     fg_color=PAINEL, border_width=1, border_color=ROXO_ESCURO, hover_color=PAINEL2,
                                     text_color=ROXO_CLARO, font=(MONO, 12, "bold"), command=self.clicou_mic)
         self.pilula.pack(pady=(2, 4))
-        self.lbl_dica = ctk.CTkLabel(moldura, text="", font=(MONO, 10), text_color=MUDO, height=14)
+        self.lbl_dica = ctk.CTkLabel(self.nucleo_container, text="", font=(MONO, 10), text_color=MUDO, height=14)
         self.lbl_dica.pack()
         self._atualizar_dica()
         # faixa de informações: clima • próximo lembrete • e-mails
-        faixa = ctk.CTkFrame(moldura, fg_color="transparent")
+        faixa = ctk.CTkFrame(self.nucleo_container, fg_color="transparent")
         faixa.pack(fill="x", padx=20, pady=(10, 0))
         for k in range(3):
             faixa.grid_columnconfigure(k, weight=1, uniform="f")
@@ -2210,16 +2213,34 @@ class App(ctk.CTk):
             ctk.CTkButton(fr, text="✕", width=28, height=24, fg_color="transparent", hover_color="#3a1d2a",
                           text_color=VERMELHO, command=ao_apagar).pack(side="right", padx=6)
 
-    # ---------------- chat por texto com a IA ----------------
+    # ---------------- chat integrado no centro do HUD ----------------
     def mostrar_chat(self, _=None):
-        """Janela de conversa com barra lateral de Projetos e T?picos (estilo Antigravity / IDE)."""
-        j = getattr(self, "_chat_janela", None)
-        if j is not None and j.winfo_exists():
-            j.lift()
-            j.focus_force()
-            self._chat_entrada.focus_set()
+        """Substitui a esfera/n?cleo central pela interface completa de chat com Projetos e T?picos."""
+        if getattr(self, "_chat_ativo", False):
             return
+        self._chat_ativo = True
+        
+        # Oculta a visualiza??o da esfera do n?cleo
+        self.nucleo_container.pack_forget()
 
+        if not hasattr(self, "_chat_frame_central") or self._chat_frame_central is None or not self._chat_frame_central.winfo_exists():
+            self._criar_chat_central()
+        else:
+            self._chat_frame_central.pack(fill="both", expand=True)
+
+        self._chat_renderizar_lateral()
+        self._chat_carregar_historico_na_tela()
+        self._chat_entrada.focus_set()
+
+    def fechar_chat(self):
+        """Fecha a ?rea de chat e restaura imediatamente o n?cleo (bola central) com anima??o."""
+        self._chat_ativo = False
+        if hasattr(self, "_chat_frame_central") and self._chat_frame_central is not None:
+            self._chat_frame_central.pack_forget()
+        self.nucleo_container.pack(fill="both", expand=True)
+
+    def _criar_chat_central(self):
+        """Cria o painel de chat diretamente no centro da janela principal do Jon."""
         self._chat_topicos_dados = chat_topicos_mgr.carregar_dados()
         proj_ativo, top_ativo = chat_topicos_mgr.obter_topico_ativo(self._chat_topicos_dados)
         self._chat_hist = top_ativo.get("mensagens", [])
@@ -2228,83 +2249,75 @@ class App(ctk.CTk):
         self._chat_ocupado = False
         self._chat_imagens_pendentes = []
 
-        j = ctk.CTkToplevel(self)
-        self._chat_janela = j
-        j.title("J O N ? Conversar com a IA")
-        j.geometry("1020x820")
-        j.minsize(780, 560)
-        j.configure(fg_color=BG)
-        j.after(150, j.lift)
-        try:
-            j.after(250, lambda: j.iconbitmap(os.path.join(PASTA, "assistente.ico")))
-        except Exception:
-            pass
+        cf = ctk.CTkFrame(self.cen_moldura, fg_color="transparent")
+        self._chat_frame_central = cf
+        cf.pack(fill="both", expand=True)
 
-        # ===== CORPO DIVIDIDO EM 2 COLUNAS =====
-        # Lateral esquerda: Projetos / T?picos (estilo Antigravity)
-        lat = ctk.CTkFrame(j, fg_color="#0e081c", width=260, corner_radius=0, border_color=BORDA, border_width=1)
+        # Barra lateral esquerda: Projects / T?picos (estilo Antigravity)
+        lat = ctk.CTkFrame(cf, fg_color="#0e081c", width=220, corner_radius=0, border_color=BORDA, border_width=1)
         lat.pack(side="left", fill="y")
         lat.pack_propagate(False)
 
-        lat_topo = ctk.CTkFrame(lat, fg_color="transparent", height=48)
-        lat_topo.pack(fill="x", padx=10, pady=(10, 6))
-        ctk.CTkLabel(lat_topo, text="Projects", font=(SANS, 14, "bold"), text_color="#ffffff").pack(side="left", padx=4)
-        
-        btn_novo = ctk.CTkButton(lat_topo, text="+ Novo", width=62, height=26, fg_color=ROXO, hover_color=ROXO_CLARO,
+        lat_topo = ctk.CTkFrame(lat, fg_color="transparent", height=42)
+        lat_topo.pack(fill="x", padx=8, pady=(8, 4))
+        ctk.CTkLabel(lat_topo, text="Projects", font=(SANS, 13, "bold"), text_color="#ffffff").pack(side="left", padx=2)
+        btn_novo = ctk.CTkButton(lat_topo, text="+ Novo", width=54, height=24, fg_color=ROXO, hover_color=ROXO_CLARO,
                                  text_color="#0b0716", font=(MONO, 10, "bold"), command=self._chat_novo_topico)
         btn_novo.pack(side="right")
 
-        # Scrollable frame para lista de projetos e chats
         self._chat_lista_frame = ctk.CTkScrollableFrame(lat, fg_color="transparent", scrollbar_button_color=BORDA)
-        self._chat_lista_frame.pack(fill="both", expand=True, padx=4, pady=4)
+        self._chat_lista_frame.pack(fill="both", expand=True, padx=2, pady=2)
 
-        # Lateral direita: ?rea da Conversa
-        dir_frame = ctk.CTkFrame(j, fg_color=BG, corner_radius=0)
-        dir_frame.pack(side="right", fill="both", expand=True)
+        # Lado direito: ?rea de Conversa e Mensagens
+        area_msg = ctk.CTkFrame(cf, fg_color=BG, corner_radius=0)
+        area_msg.pack(side="right", fill="both", expand=True)
 
-        topo = ctk.CTkFrame(dir_frame, fg_color=PAINEL, border_color=BORDA, border_width=1, corner_radius=0, height=50)
+        topo = ctk.CTkFrame(area_msg, fg_color=PAINEL, border_color=BORDA, border_width=1, corner_radius=0, height=44)
         topo.pack(fill="x")
         topo.pack_propagate(False)
-        ctk.CTkLabel(topo, text="?", font=(SANS, 18), text_color=ROXO).pack(side="left", padx=(14, 8))
-        self._chat_titulo_label = ctk.CTkLabel(topo, text=top_ativo["titulo"].upper(), font=(MONO, 12, "bold"), text_color=LILAS)
+        ctk.CTkLabel(topo, text="?", font=(SANS, 16), text_color=ROXO).pack(side="left", padx=(10, 6))
+        self._chat_titulo_label = ctk.CTkLabel(topo, text=top_ativo["titulo"].upper(), font=(MONO, 11, "bold"), text_color=LILAS)
         self._chat_titulo_label.pack(side="left")
         self._chat_status = ctk.CTkLabel(topo, text="", font=(MONO, 9), text_color=MUDO)
-        self._chat_status.pack(side="left", padx=10)
+        self._chat_status.pack(side="left", padx=8)
 
-        ctk.CTkButton(topo, text="LIMPAR", width=64, height=24, fg_color="transparent", border_width=1,
-                      border_color=BORDA, hover_color=PAINEL2, text_color=ROXO_CLARO, font=(MONO, 9, "bold"),
-                      command=self._chat_limpar).pack(side="right", padx=(4, 12))
-        ctk.CTkButton(topo, text="?? ANALISAR PASTA", width=120, height=24, fg_color="transparent", border_width=1,
-                      border_color=BORDA, hover_color=PAINEL2, text_color=LILAS, font=(MONO, 9, "bold"),
-                      command=self._chat_selecionar_pasta).pack(side="right", padx=4)
-        ctk.CTkButton(topo, text="?? ANEXAR FOTO", width=105, height=24, fg_color="transparent", border_width=1,
-                      border_color=BORDA, hover_color=PAINEL2, text_color=LILAS, font=(MONO, 9, "bold"),
-                      command=self._chat_anexar_foto).pack(side="right", padx=4)
+        # Bot?o X para fechar a conversa e voltar para a bola
+        btn_fechar = ctk.CTkButton(topo, text="?", width=28, height=28, fg_color="transparent", hover_color="#3a1d2a",
+                                   text_color=VERMELHO, font=(MONO, 13, "bold"), command=self.fechar_chat)
+        btn_fechar.pack(side="right", padx=(4, 8))
 
-        self._chat_txt = ctk.CTkTextbox(dir_frame, fg_color=BG, font=(SANS, 13), text_color=LILAS, wrap="word",
+        ctk.CTkButton(topo, text="LIMPAR", width=56, height=22, fg_color="transparent", border_width=1,
+                      border_color=BORDA, hover_color=PAINEL2, text_color=ROXO_CLARO, font=(MONO, 8, "bold"),
+                      command=self._chat_limpar).pack(side="right", padx=3)
+        ctk.CTkButton(topo, text="?? PASTA", width=75, height=22, fg_color="transparent", border_width=1,
+                      border_color=BORDA, hover_color=PAINEL2, text_color=LILAS, font=(MONO, 8, "bold"),
+                      command=self._chat_selecionar_pasta).pack(side="right", padx=3)
+        ctk.CTkButton(topo, text="?? FOTO", width=68, height=22, fg_color="transparent", border_width=1,
+                      border_color=BORDA, hover_color=PAINEL2, text_color=LILAS, font=(MONO, 8, "bold"),
+                      command=self._chat_anexar_foto).pack(side="right", padx=3)
+
+        self._chat_txt = ctk.CTkTextbox(area_msg, fg_color=BG, font=(SANS, 13), text_color=LILAS, wrap="word",
                                         border_width=0, scrollbar_button_color=BORDA,
                                         scrollbar_button_hover_color=ROXO_ESCURO)
-        self._chat_txt.pack(fill="both", expand=True, padx=12, pady=(8, 4))
+        self._chat_txt.pack(fill="both", expand=True, padx=10, pady=(6, 2))
         tb = self._chat_txt._textbox
-        tb.tag_config("quem_voce", foreground=ROSA, font=(MONO, 10, "bold"), spacing1=16)
-        tb.tag_config("quem_jon", foreground=ROXO, font=(MONO, 10, "bold"), spacing1=16)
-        tb.tag_config("voce", foreground="#ffffff", font=(SANS, 13), lmargin1=16, lmargin2=16, spacing1=4, spacing3=10)
-        tb.tag_config("jon", foreground="#e2ddf7", font=(SANS, 13), lmargin1=16, lmargin2=16, spacing1=4, spacing3=10)
-        tb.tag_config("codigo", foreground="#a6e22e", background="#120c24", font=(MONO, 11), lmargin1=24, lmargin2=24, spacing1=4, spacing3=6)
-        tb.tag_config("info", foreground=MUDO, font=(SANS, 11, "italic"), lmargin1=16, lmargin2=16, spacing1=6)
-        tb.tag_config("erro", foreground=VERMELHO, font=(SANS, 12), lmargin1=16, lmargin2=16)
+        tb.tag_config("quem_voce", foreground=ROSA, font=(MONO, 10, "bold"), spacing1=12)
+        tb.tag_config("quem_jon", foreground=ROXO, font=(MONO, 10, "bold"), spacing1=12)
+        tb.tag_config("voce", foreground="#ffffff", font=(SANS, 13), lmargin1=14, lmargin2=14, spacing1=3, spacing3=8)
+        tb.tag_config("jon", foreground="#e2ddf7", font=(SANS, 13), lmargin1=14, lmargin2=14, spacing1=3, spacing3=8)
+        tb.tag_config("codigo", foreground="#a6e22e", background="#120c24", font=(MONO, 11), lmargin1=20, lmargin2=20, spacing1=4, spacing3=6)
+        tb.tag_config("info", foreground=MUDO, font=(SANS, 11, "italic"), lmargin1=14, lmargin2=14, spacing1=4)
+        tb.tag_config("erro", foreground=VERMELHO, font=(SANS, 12), lmargin1=14, lmargin2=14)
 
-        base = ctk.CTkFrame(dir_frame, fg_color=PAINEL, border_color=BORDA, border_width=1, corner_radius=6)
-        base.pack(fill="x", padx=12, pady=(4, 10))
-        self._chat_entrada = ctk.CTkTextbox(base, height=60, fg_color=PAINEL, border_width=0, text_color=LILAS,
-                                            font=(SANS, 13), wrap="word")
-        self._chat_entrada.pack(side="left", fill="both", expand=True, padx=(8, 4), pady=6)
-        self._chat_bt = ctk.CTkButton(base, text="ENVIAR", width=84, height=40, fg_color=ROXO,
-                                      hover_color=ROXO_CLARO, text_color="#0b0716", font=(MONO, 11, "bold"),
+        base = ctk.CTkFrame(area_msg, fg_color=PAINEL, border_color=BORDA, border_width=1, corner_radius=6)
+        base.pack(fill="x", padx=10, pady=(2, 6))
+        self._chat_entrada = ctk.CTkTextbox(base, height=50, fg_color=PAINEL, border_width=0, text_color=LILAS,
+                                            font=(SANS, 12), wrap="word")
+        self._chat_entrada.pack(side="left", fill="both", expand=True, padx=(8, 4), pady=4)
+        self._chat_bt = ctk.CTkButton(base, text="ENVIAR", width=74, height=36, fg_color=ROXO,
+                                      hover_color=ROXO_CLARO, text_color="#0b0716", font=(MONO, 10, "bold"),
                                       command=self._chat_enviar)
-        self._chat_bt.pack(side="right", padx=(4, 8), pady=6)
-        ctk.CTkLabel(dir_frame, text="Enter = enviar  ?  Shift+Enter = nova linha", font=(MONO, 9),
-                     text_color=APAGADO, height=12).pack(pady=(0, 6))
+        self._chat_bt.pack(side="right", padx=(4, 6), pady=4)
 
         def tecla_enter(e):
             if e.state & 0x1:
@@ -2312,25 +2325,22 @@ class App(ctk.CTk):
             self._chat_enviar()
             return "break"
         self._chat_entrada.bind("<Return>", tecla_enter)
-        j.bind("<Escape>", lambda e: j.destroy())
+        self.bind("<Escape>", lambda e: self.fechar_chat())
 
-        self._chat_renderizar_lateral()
-        self._chat_carregar_historico_na_tela()
-        if not ia_local.disponivel():
-            self._chat_add("info", "A IA local est? desligada. Abra o Ollama (ou rode 3_baixar_ia.bat) e tente de novo.")
-        self._chat_entrada.focus_set()
-        self._chat_loop()
+        self.after(50, self._chat_loop)
 
     def _chat_renderizar_lateral(self):
         """Desenha a lista de pastas e t?picos na barra lateral estilo Antigravity."""
+        if not hasattr(self, "_chat_lista_frame"):
+            return
         for w in self._chat_lista_frame.winfo_children():
             w.destroy()
 
         for proj in self._chat_topicos_dados.get("projetos", []):
             p_box = ctk.CTkFrame(self._chat_lista_frame, fg_color="transparent")
-            p_box.pack(fill="x", pady=(8, 2), padx=2)
-            ctk.CTkLabel(p_box, text=f"??  {proj['nome']}", font=(SANS, 12, "bold"),
-                         text_color="#a09cb0", anchor="w").pack(side="left", padx=4)
+            p_box.pack(fill="x", pady=(6, 1), padx=2)
+            ctk.CTkLabel(p_box, text=f"??  {proj['nome']}", font=(SANS, 11, "bold"),
+                         text_color="#a09cb0", anchor="w").pack(side="left", padx=2)
 
             for top in proj.get("topicos", []):
                 ativo = (top["id"] == self._chat_topico_id)
@@ -2338,17 +2348,17 @@ class App(ctk.CTk):
                 cor_txt = "#ffffff" if ativo else "#62a0ea"
                 btn_top = ctk.CTkButton(
                     self._chat_lista_frame,
-                    text=f"    {top['titulo'][:26]}",
+                    text=f"  {top['titulo'][:22]}",
                     anchor="w",
                     fg_color=cor_bg,
                     hover_color="#1d1433",
                     text_color=cor_txt,
-                    font=(SANS, 12, "bold" if ativo else "normal"),
-                    height=28,
-                    corner_radius=6,
+                    font=(SANS, 11, "bold" if ativo else "normal"),
+                    height=26,
+                    corner_radius=4,
                     command=lambda tid=top["id"]: self._chat_abrir_topico(tid)
                 )
-                btn_top.pack(fill="x", padx=6, pady=1)
+                btn_top.pack(fill="x", padx=4, pady=1)
 
     def _chat_abrir_topico(self, topico_id):
         if self._chat_ocupado:
@@ -2373,6 +2383,8 @@ class App(ctk.CTk):
         self._chat_carregar_historico_na_tela()
 
     def _chat_carregar_historico_na_tela(self):
+        if not hasattr(self, "_chat_txt"):
+            return
         self._chat_txt.configure(state="normal")
         self._chat_txt.delete("1.0", "end")
         self._chat_txt.configure(state="disabled")
@@ -2381,7 +2393,7 @@ class App(ctk.CTk):
                 self._chat_add("voce" if msg.get("role") == "user" else "jon", msg.get("content", ""))
         else:
             nome = self.cfg.get("nome") or ""
-            self._chat_add("jon", f"Oi{', ' + nome if nome else ''}! T?pico pronto. Pode me perguntar ou pedir o que quiser ? c?digo, tarefas, fotos, projetos?")
+            self._chat_add("jon", f"Oi{', ' + nome if nome else ''}! T?pico pronto. Como posso ajudar com seus projetos hoje?")
 
     def _chat_salvar_historico(self):
         chat_topicos_mgr.salvar_mensagens_topico(self._chat_topicos_dados, self._chat_topico_id, self._chat_hist)
@@ -2500,8 +2512,8 @@ class App(ctk.CTk):
         self._chat_txt.configure(state="disabled")
 
     def _chat_loop(self):
-        j = getattr(self, "_chat_janela", None)
-        if j is None or not j.winfo_exists():
+        if not getattr(self, "_chat_ativo", False):
+            self.after(200, self._chat_loop)
             return
         ultimo = None
         try:
