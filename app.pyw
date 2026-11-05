@@ -15,6 +15,9 @@ import threading
 import time
 import traceback
 from versao import VERSAO, VERSAO_NOME
+import codigo_analisador
+from tkinter import filedialog
+import base64
 
 PASTA = os.path.dirname(os.path.abspath(__file__))
 os.chdir(PASTA)
@@ -2216,10 +2219,16 @@ class App(ctk.CTk):
             j.focus_force()
             self._chat_entrada.focus_set()
             return
+        arq_chat_hist = os.path.join(PASTA, "chat_historico.json")
         if not hasattr(self, "_chat_hist"):
-            self._chat_hist = []
+            try:
+                with open(arq_chat_hist, "r", encoding="utf-8") as f:
+                    self._chat_hist = json.load(f)
+            except Exception:
+                self._chat_hist = []
         self._chat_fila = queue.Queue()
         self._chat_ocupado = False
+        self._chat_imagens_pendentes = []
 
         j = ctk.CTkToplevel(self)
         self._chat_janela = j
@@ -2242,7 +2251,13 @@ class App(ctk.CTk):
         self._chat_status.pack(side="left", padx=10)
         ctk.CTkButton(topo, text="LIMPAR", width=64, height=24, fg_color="transparent", border_width=1,
                       border_color=BORDA, hover_color=PAINEL2, text_color=ROXO_CLARO, font=(MONO, 9, "bold"),
-                      command=self._chat_limpar).pack(side="right", padx=12)
+                      command=self._chat_limpar).pack(side="right", padx=(4, 12))
+        ctk.CTkButton(topo, text="?? ANALISAR PASTA", width=120, height=24, fg_color="transparent", border_width=1,
+                      border_color=BORDA, hover_color=PAINEL2, text_color=LILAS, font=(MONO, 9, "bold"),
+                      command=self._chat_selecionar_pasta).pack(side="right", padx=4)
+        ctk.CTkButton(topo, text="?? ANEXAR FOTO", width=105, height=24, fg_color="transparent", border_width=1,
+                      border_color=BORDA, hover_color=PAINEL2, text_color=LILAS, font=(MONO, 9, "bold"),
+                      command=self._chat_anexar_foto).pack(side="right", padx=4)
 
         self._chat_txt = ctk.CTkTextbox(j, fg_color=BG, font=(SANS, 13), text_color=LILAS, wrap="word",
                                         border_width=0, scrollbar_button_color=BORDA,
@@ -2304,24 +2319,86 @@ class App(ctk.CTk):
         tb.see("end")
         self._chat_txt.configure(state="disabled")
 
+    def _chat_salvar_historico(self):
+        try:
+            arq = os.path.join(PASTA, "chat_historico.json")
+            # Salva no m?ximo os ?ltimos 60 di?logos
+            with open(arq, "w", encoding="utf-8") as f:
+                json.dump(self._chat_hist[-60:], f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            print("  (erro ao salvar chat_historico.json):", e)
+
+    def _chat_anexar_foto(self):
+        if self._chat_ocupado:
+            return
+        caminho = filedialog.askopenfilename(
+            title="Selecione uma imagem ou foto",
+            filetypes=[("Imagens", "*.png;*.jpg;*.jpeg;*.webp;*.bmp"), ("Todos os arquivos", "*.*")]
+        )
+        if not caminho or not os.path.exists(caminho):
+            return
+        try:
+            with open(caminho, "rb") as f:
+                b64 = base64.b64encode(f.read()).decode("utf-8")
+            if not hasattr(self, "_chat_imagens_pendentes"):
+                self._chat_imagens_pendentes = []
+            self._chat_imagens_pendentes.append(b64)
+            nome_arq = os.path.basename(caminho)
+            self._chat_add("info", f"?? Foto anexada: {nome_arq} (ser? enviada na sua pr?xima mensagem)")
+        except Exception as e:
+            self._chat_add("erro", f"Erro ao anexar foto: {e}")
+
+    def _chat_selecionar_pasta(self):
+        if self._chat_ocupado:
+            return
+        pasta = filedialog.askdirectory(title="Selecione a pasta do c?digo para o Jon analisar")
+        if not pasta or not os.path.exists(pasta):
+            return
+        self._chat_add("info", f"?? Lendo e indexando pasta: {pasta} ...")
+        self._chat_ocupado = True
+        self._chat_status.configure(text="INDEXANDO C?DIGO?", text_color=ROXO_CLARO)
+
+        def _ler():
+            try:
+                resumo_codigo = codigo_analisador.ler_codigo_completo(pasta)
+                msg_sistema = {
+                    "role": "user",
+                    "content": f"[ARQUIVOS DO PROJETO CARREGADOS: {pasta}]\n\n" + resumo_codigo + "\n\nPor favor, analise a arquitetura e os arquivos acima."
+                }
+                self._chat_hist.append(msg_sistema)
+                self._chat_salvar_historico()
+                self._chat_fila.put(("fim", f"Analisei todos os arquivos de `{os.path.basename(pasta)}` com sucesso, senhor. J? memorizei a estrutura e o c?digo do projeto. O que gostaria que eu fizesse ou criasse nele?"))
+            except Exception as e:
+                self._chat_fila.put(("erro", f"Erro ao analisar pasta: {e}"))
+        threading.Thread(target=_ler, daemon=True).start()
+
     def _chat_limpar(self):
         if self._chat_ocupado:
             return
         self._chat_hist = []
+        self._chat_imagens_pendentes = []
+        self._chat_salvar_historico()
         self._chat_txt.configure(state="normal")
         self._chat_txt.delete("1.0", "end")
         self._chat_txt.configure(state="disabled")
-        self._chat_add("info", "Conversa nova.")
+        self._chat_add("info", "Conversa nova limpa.")
 
     def _chat_enviar(self):
         if self._chat_ocupado:
             return
         texto = self._chat_entrada.get("1.0", "end").strip()
-        if not texto:
+        if not texto and not getattr(self, "_chat_imagens_pendentes", None):
             return
         self._chat_entrada.delete("1.0", "end")
-        self._chat_add("voce", texto)
-        self._chat_hist.append({"role": "user", "content": texto})
+        self._chat_add("voce", texto or "(imagem anexada)")
+        
+        msg_usuario = {"role": "user", "content": texto}
+        if getattr(self, "_chat_imagens_pendentes", None):
+            msg_usuario["images"] = list(self._chat_imagens_pendentes)
+            self._chat_imagens_pendentes = []
+            
+        self._chat_hist.append(msg_usuario)
+        self._chat_salvar_historico()
         # começa a resposta do Jon (vai sendo preenchida enquanto chega)
         tb = self._chat_txt._textbox
         self._chat_txt.configure(state="normal")
@@ -2378,10 +2455,12 @@ class App(ctk.CTk):
                 if tipo == "fim":
                     self._chat_trocar_resposta(val)
                     self._chat_hist.append({"role": "assistant", "content": val})
+                    self._chat_salvar_historico()
                 else:
                     self._chat_trocar_resposta(val, "erro")
                     if self._chat_hist and self._chat_hist[-1]["role"] == "user":
                         self._chat_hist.pop()
+                    self._chat_salvar_historico()
                 self._chat_ocupado = False
                 self._chat_bt.configure(state="normal", text="ENVIAR")
                 self._chat_status.configure(text="")

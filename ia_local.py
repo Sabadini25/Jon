@@ -270,14 +270,22 @@ def _chat_stream(dados, ao_pedaco=None) -> str:
 
 
 def conversar(historico, ao_pedaco=None, maximo=24) -> str:
-    """Conversa livre por texto. historico = [{"role": "user"/"assistant", "content": "..."}].
+    """Conversa livre por texto e visão multimodal (fotos/prints).
+    historico = [{"role": "user"/"assistant", "content": "...", "images": ["base64..."]}].
     ao_pedaco(texto_ate_agora) é chamado enquanto a resposta vai chegando."""
     m = carregar_memoria()
     sistema = INSTRUCOES_CHAT.replace("{NOME}", _nome_dono()).replace("{DATA}", time.strftime("%d/%m/%Y %H:%M"))
     if m["fatos"]:
         sistema += "\n\nO que você sabe sobre ele: " + " | ".join(m["fatos"][-40:])
-    msgs = [{"role": "system", "content": sistema}] + \
-           [{"role": x["role"], "content": x["content"]} for x in historico[-maximo:]]
+    
+    mensagens_formatadas = []
+    for x in historico[-maximo:]:
+        m_item = {"role": x["role"], "content": x.get("content", "")}
+        if x.get("images"):
+            m_item["images"] = x["images"]
+        mensagens_formatadas.append(m_item)
+
+    msgs = [{"role": "system", "content": sistema}] + mensagens_formatadas
     dados = {"model": MODELO, "messages": msgs, "stream": True, "keep_alive": MANTER,
              "options": {"temperature": 0.7, "num_ctx": 8192}}
     if "qwen3" in MODELO or "deepseek" in MODELO:
