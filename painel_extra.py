@@ -476,7 +476,7 @@ class Notificacoes:
         import asyncio
         try:
             mods = self._importar()
-        except ImportError:
+        except (ImportError, AttributeError, Exception) as e:
             self.estado = "instalando"
             self.mudou.set()
             if not _instalar_winrt():
