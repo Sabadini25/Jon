@@ -2224,8 +2224,8 @@ class App(ctk.CTk):
         j = ctk.CTkToplevel(self)
         self._chat_janela = j
         j.title("Conversar com o Jon")
-        j.geometry("560x700")
-        j.minsize(420, 420)
+        j.geometry("780x820")
+        j.minsize(580, 520)
         j.configure(fg_color=BG)
         j.after(150, j.lift)
         try:
@@ -2249,12 +2249,13 @@ class App(ctk.CTk):
                                         scrollbar_button_hover_color=ROXO_ESCURO)
         self._chat_txt.pack(fill="both", expand=True, padx=10, pady=(8, 4))
         tb = self._chat_txt._textbox
-        tb.tag_config("quem_voce", foreground=ROSA, font=(MONO, 10, "bold"), spacing1=12)
-        tb.tag_config("quem_jon", foreground=ROXO, font=(MONO, 10, "bold"), spacing1=12)
-        tb.tag_config("voce", foreground="#ffffff", font=(SANS, 13), lmargin1=6, lmargin2=6, spacing3=4)
-        tb.tag_config("jon", foreground=LILAS, font=(SANS, 13), lmargin1=6, lmargin2=6, spacing3=4)
-        tb.tag_config("info", foreground=MUDO, font=(SANS, 11, "italic"), spacing1=6)
-        tb.tag_config("erro", foreground=VERMELHO, font=(SANS, 12))
+        tb.tag_config("quem_voce", foreground=ROSA, font=(MONO, 10, "bold"), spacing1=16)
+        tb.tag_config("quem_jon", foreground=ROXO, font=(MONO, 10, "bold"), spacing1=16)
+        tb.tag_config("voce", foreground="#ffffff", font=(SANS, 13), lmargin1=16, lmargin2=16, spacing1=4, spacing3=10)
+        tb.tag_config("jon", foreground="#e2ddf7", font=(SANS, 13), lmargin1=16, lmargin2=16, spacing1=4, spacing3=10)
+        tb.tag_config("codigo", foreground="#a6e22e", background="#120c24", font=(MONO, 11), lmargin1=24, lmargin2=24, spacing1=4, spacing3=6)
+        tb.tag_config("info", foreground=MUDO, font=(SANS, 11, "italic"), lmargin1=16, lmargin2=16, spacing1=6)
+        tb.tag_config("erro", foreground=VERMELHO, font=(SANS, 12), lmargin1=16, lmargin2=16)
 
         base = ctk.CTkFrame(j, fg_color=PAINEL, border_color=BORDA, border_width=1, corner_radius=6)
         base.pack(fill="x", padx=10, pady=(4, 10))
@@ -2339,9 +2340,9 @@ class App(ctk.CTk):
 
         def rodar():
             try:
-                # Se for uma ordem direta pro PC (criar pasta/arquivo, otimizar, abrir, tocar, etc.), executa de verdade!
+                # Se for uma ordem direta pro PC (criar pasta/arquivo, otimizar, abrir, vscode, tocar, etc.), executa de verdade!
                 f_norm = av.normalizar(texto)
-                eh_acao = re.match(r"^(cria\w*|otimiza\w*|limpa\w*|libera\w*|esvazia\w*|organiza\w*|arruma\w*|abre\w*|abrir|fecha\w*|fechar|toca\w*|tocar|instala\w*|bloqueia\w*|minimiza\w*|tira\w* um print|processos pesados)", f_norm)
+                eh_acao = re.match(r"^(cria\w*|otimiza\w*|limpa\w*|libera\w*|esvazia\w*|organiza\w*|arruma\w*|abre\w*|abrir|vscode|vs code|fecha\w*|fechar|toca\w*|tocar|instala\w*|bloqueia\w*|minimiza\w*|tira\w* um print|processos pesados)", f_norm)
                 if eh_acao:
                     r_exec = av.executar_remoto(texto, "pc")
                     resp_acao = r_exec.get("resposta") or "Pronto, senhor."

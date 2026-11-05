@@ -453,3 +453,23 @@ def comando_powershell(cmd: str) -> str:
         return "Comando executado com sucesso, senhor."
     except Exception as e:
         return f"Erro ao executar o comando: {e}"
+
+
+def abrir_no_vscode(caminho_ou_pasta: str = "") -> str:
+    """Abre um arquivo ou pasta no Visual Studio Code (comando code)."""
+    caminho = (caminho_ou_pasta or "").strip()
+    try:
+        if not caminho:
+            subprocess.Popen(["code", "."], shell=True)
+            return "Abrindo o VS Code no diretório do projeto, senhor."
+        alvo = caminho
+        if caminho.lower() in ("desktop", "área de trabalho", "area de trabalho"):
+            alvo = os.path.join(os.path.expanduser("~"), "Desktop")
+        elif caminho.lower() in ("downloads", "download"):
+            alvo = os.path.join(os.path.expanduser("~"), "Downloads")
+        elif caminho.lower() in ("jon", "projeto"):
+            alvo = os.path.dirname(os.path.abspath(__file__))
+        subprocess.Popen(["code", alvo], shell=True)
+        return f"Abrindo {os.path.basename(alvo) or alvo} no VS Code, senhor."
+    except Exception as e:
+        return f"Não consegui abrir o VS Code: {e}"

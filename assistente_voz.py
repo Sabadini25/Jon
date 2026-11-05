@@ -1399,6 +1399,9 @@ def executar_acao(a: dict, frase_original: str = ""):
     elif tipo_acao == "comando_powershell":
         resp = extras.comando_powershell(txt)
         print(f"  -> {resp}")
+    elif tipo_acao == "abrir_vscode":
+        resp = extras.abrir_no_vscode(txt)
+        print(f"  -> {resp}")
     elif tipo_acao == "responder":
         pass
     else:

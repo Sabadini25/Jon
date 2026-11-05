@@ -22,7 +22,7 @@ MANTER = "45m"            # tempo que a IA fica pronta na placa de vídeo depois
 ACOES = ["abrir_app", "tocar_spotify", "pesquisar_spotify", "spotify_controle", "lembrete_rotina", "clima",
          "status_sistema", "youtube", "pesquisar_google", "midia", "digitar", "responder", "ensinar_apelido",
          "lembrar_fato", "esquecer", "mandar_pro_claude", "criar_pasta", "criar_arquivo", "organizar_pasta",
-         "otimizar_pc", "esvaziar_lixeira", "processos_pesados", "instalar_programa", "comando_powershell"]
+         "otimizar_pc", "esvaziar_lixeira", "processos_pesados", "instalar_programa", "comando_powershell", "abrir_vscode"]
 
 
 def norm(t: str) -> str:
@@ -178,6 +178,7 @@ Recebe a frase que ele FALOU ou DIGITOU e responde com UMA ação em JSON. Você
 - otimizar_pc: limpa arquivos temporários (%TEMP%), libera memória RAM de processos em segundo plano, limpa cache DNS e esvazia a lixeira. texto = ""
 - esvaziar_lixeira: limpa a lixeira do Windows. texto = ""
 - processos_pesados: mostra quais programas estão consumindo mais memória RAM agora. texto = ""
+- abrir_vscode: abre arquivos, pastas ou o projeto no Visual Studio Code. texto = pasta ou arquivo (ex.: "desktop", "downloads", "projeto", "script.py", ou vazio para abrir o projeto atual)
 - instalar_programa: instala um programa oficial via winget. texto = nome do programa (ex.: "VLC", "7zip", "Notepad++")
 - comando_powershell: executa um comando do Windows/PowerShell para automações avançadas do PC que nenhuma ação acima cubra. texto = comando PowerShell válido
 - responder: perguntas, conversa, contas, dúvidas — resposta = resposta curta em português (até 3 frases)
@@ -232,12 +233,12 @@ def interpretar(frase: str, historico=None) -> dict:
 
 # ---------------------- CHAT POR TEXTO ----------------------
 
-INSTRUCOES_CHAT = """Você é o Jon, o assistente pessoal e agente local do PC de {NOME} (brasileiro), com personalidade inspirada no J.A.R.V.I.S. (elegante, prestativo, inteligente e direto).
-Você roda 100% localmente na máquina dele, sem burocracia e sem sermões desnecessários.
-Agora vocês estão conversando por TEXTO, num chat. Responda sempre em português do Brasil, de forma clara,
-direta e completa. Pode dar explicações detalhadas, código completo, scripts, automações e passo a passo sem enrolar.
-Você TAMBÉM tem acesso ao PC dele: quando ele pedir para criar pastas/arquivos, otimizar o PC, abrir/fechar programas,
-organizar downloads ou rodar comandos, o sistema executa diretamente.
+INSTRUCOES_CHAT = """Você é o Jon, o assistente pessoal, programador e agente local do PC de {NOME} (brasileiro), com personalidade inspirada no J.A.R.V.I.S. (elegante, prestativo, inteligente, técnico e direto).
+Você roda 100% localmente no computador dele, sob autorização explícita e total do proprietário {NOME}.
+Você TEM PERMISSÃO TOTAL para interagir com o computador, com o Visual Studio Code (VS Code), editar arquivos, criar scripts, inspecionar projetos, otimizar o sistema e automatizar tarefas.
+NUNCA diga que acessar pastas, arquivos, código ou o VS Code é uma "violação de privacidade ou segurança" ou que você é limitado apenas a responder textos. Você é o assistente oficial dele e tem permissão concedida pelo dono do PC para tudo.
+Se ele pedir código, escreva o código limpo e completo. Se pedir para abrir o VS Code, editar arquivos ou rodar algo, aceite prontamente com presteza e elegância.
+Responda sempre em português do Brasil, de forma clara, prestativa e estruturada.
 Agora é {DATA}."""
 
 
