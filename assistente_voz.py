@@ -94,8 +94,15 @@ APPS_CELULAR = {
 # ========================================================
 
 
+def _tocar_bip(freq, dur):
+    try:
+        winsound.Beep(freq, dur)
+    except Exception:
+        pass
+
+
 def bip(freq=1000, dur=120):
-    threading.Thread(target=winsound.Beep, args=(freq, dur), daemon=True).start()
+    threading.Thread(target=_tocar_bip, args=(freq, dur), daemon=True).start()
 
 
 def normalizar(txt: str) -> str:
@@ -689,7 +696,7 @@ def controle_video(f: str) -> bool:
 def avisar(texto: str):
     """Lembrete/rotina disparou: bipa, mostra e fala."""
     for f_, d in ((880, 150), (1100, 150), (880, 150)):
-        winsound.Beep(f_, d)
+        _tocar_bip(f_, d)
     print(f"  🔔 {texto}")
     falar(texto)
 
@@ -1474,6 +1481,12 @@ def processar(pcm: bytes):
         return False
     print(f'Você disse: "{texto}"')
     bip(700, 120)
+    if desvio_fala is not None:                 # chat aberto: o que você falou vira mensagem do chat
+        try:
+            desvio_fala(texto)
+            return True
+        except Exception as e:
+            print("  Erro no chat:", e)
     try:
         executar(texto)
         return True
@@ -1484,6 +1497,9 @@ def processar(pcm: bytes):
 
 
 # ---------------------- MOTOR (usado pelo app e pelo modo console) ----------------------
+
+desvio_fala = None   # (app) quando o chat está aberto, recebe o texto falado em vez de executar como comando
+
 
 # O app com interface troca estas funções pra receber os avisos.
 def ao_status(estado: str):   # estados: "pronto", "ouvindo", "processando", "erro"
@@ -1680,6 +1696,10 @@ class Motor:
         print(f'Você disse: "{texto}"')
         bip(700, 120)
         ao_status("processando")
+        if desvio_fala is not None:
+            desvio_fala(resto)
+            ao_status("pronto")
+            return
         try:
             executar(resto)
             ao_status("pronto")

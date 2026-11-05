@@ -78,7 +78,7 @@ def ler_codigo_completo(caminho_pasta: str, max_tamanho_kb: int = 100, max_arqui
 
     arquivos_lidos = 0
     bytes_totais = 0
-    max_bytes_total = 350 * 1024  # Máximo ~350KB de contexto de texto para a IA não estourar
+    max_bytes_total = 40 * 1024  # ~10 mil tokens: cabe no contexto da IA local
 
     for raiz, dirs, arqs in os.walk(caminho_pasta):
         dirs[:] = [d for d in dirs if d not in IGNORAR_DIR and not d.startswith(".")]

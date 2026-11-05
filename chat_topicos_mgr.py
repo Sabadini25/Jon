@@ -19,49 +19,17 @@ def carregar_dados():
                 return json.load(f)
         except Exception:
             pass
-
     novo_id = str(uuid.uuid4())
-    dados_padrao = {
+    dados = {
         "ativo_id": novo_id,
-        "projetos": [
-            {
-                "nome": "Jon",
-                "topicos": [
-                    {
-                        "id": novo_id,
-                        "titulo": "O Que É Este Projeto",
-                        "criado_em": time.strftime("%Y-%m-%d %H:%M"),
-                        "mensagens": []
-                    },
-                    {
-                        "id": str(uuid.uuid4()),
-                        "titulo": "Carplay Caseiro com Inteligência",
-                        "criado_em": time.strftime("%Y-%m-%d %H:%M"),
-                        "mensagens": []
-                    }
-                ]
-            },
-            {
-                "nome": "testes_antigravity",
-                "topicos": [
-                    {
-                        "id": str(uuid.uuid4()),
-                        "titulo": "Criador De Aplicativo De F...",
-                        "criado_em": time.strftime("%Y-%m-%d %H:%M"),
-                        "mensagens": []
-                    },
-                    {
-                        "id": str(uuid.uuid4()),
-                        "titulo": "Using Multiple Google Acc...",
-                        "criado_em": time.strftime("%Y-%m-%d %H:%M"),
-                        "mensagens": []
-                    }
-                ]
-            }
-        ]
+        "projetos": [{
+            "nome": "Jon",
+            "topicos": [{"id": novo_id, "titulo": "Nova Conversa",
+                         "criado_em": time.strftime("%Y-%m-%d %H:%M"), "mensagens": []}],
+        }],
     }
-    salvar_dados(dados_padrao)
-    return dados_padrao
+    salvar_dados(dados)
+    return dados
 
 
 def salvar_dados(dados):
@@ -147,16 +115,23 @@ def renomear_topico(dados, topico_id, novo_titulo):
 
 
 def salvar_mensagens_topico(dados, topico_id, mensagens):
+    # fotos (base64) não vão pro arquivo: só um contador, pra ele não crescer sem limite
+    limpas = []
+    for m in mensagens:
+        c = {k: v for k, v in m.items() if k != "images"}
+        if m.get("images"):
+            c["fotos"] = len(m["images"])
+        limpas.append(c)
     for proj in dados.get("projetos", []):
         for top in proj.get("topicos", []):
             if top.get("id") == topico_id:
-                top["mensagens"] = mensagens
-                if top["titulo"] in ("Nova Conversa", "O Que É Este Projeto") and mensagens:
-                    for m in mensagens:
-                        if m.get("role") == "user" and m.get("content"):
-                            primeira_frase = m["content"].strip().split("\n")[0][:28]
-                            if len(primeira_frase) > 3:
-                                top["titulo"] = primeira_frase.capitalize()
+                top["mensagens"] = limpas
+                if top["titulo"] in ("Nova Conversa", "O Que É Este Projeto"):
+                    for m in limpas:
+                        if m.get("role") == "user" and m.get("content") and not m.get("oculto"):
+                            primeira = m["content"].strip().split("\n")[0][:28]
+                            if len(primeira) > 3:
+                                top["titulo"] = primeira[:1].upper() + primeira[1:]
                             break
                 salvar_dados(dados)
                 return True

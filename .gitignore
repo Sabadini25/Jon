@@ -22,3 +22,9 @@ venv/
 Thumbs.db
 desktop.ini
 .DS_Store
+
+# conversas e estado local
+chat_topicos.json
+chat_historico.json
+atualizacao.json
+backups/

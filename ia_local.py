@@ -181,12 +181,12 @@ Recebe a frase que ele FALOU ou DIGITOU e responde com UMA ação em JSON. Você
 - abrir_vscode: abre arquivos, pastas ou o projeto no Visual Studio Code. texto = pasta ou arquivo (ex.: "desktop", "downloads", "projeto", "script.py", ou vazio para abrir o projeto atual)
 - instalar_programa: instala um programa oficial via winget. texto = nome do programa (ex.: "VLC", "7zip", "Notepad++")
 - comando_powershell: executa um comando do Windows/PowerShell para automações avançadas do PC que nenhuma ação acima cubra. texto = comando PowerShell válido
-- responder: perguntas, conversa, contas, dúvidas — resposta = resposta curta em português (até 3 frases)
+- responder: perguntas, conversa, contas, dúvidas, explicações — em "resposta" escreva a RESPOSTA REAL, ÚTIL E DIRETA para o que ele perguntou (em português, até 3 frases; nunca responda apenas "Compreendido" ou "Aguardo detalhes").
 - ensinar_apelido: quando ele ensinar "quando eu falar X, faça Y". gatilho = X (exatamente como ele falaria), texto = Y escrito como um comando de voz simples (ex.: "toca minhas músicas curtidas")
 - lembrar_fato: quando ele pedir pra lembrar algo sobre ele ou preferências. texto = o fato, curto.
 - esquecer: quando pedir pra esquecer um apelido ou fato. texto = o que esquecer.
 - mandar_pro_claude: só quando ele pedir explicitamente para mandar pro Claude. texto = o pedido.
-Sempre preencha "resposta" com uma confirmação curta, elegante e natural no estilo J.A.R.V.I.S. (ex.: "Pois não, senhor. Criando a pasta Projetos.", "Imediatamente, senhor.").
+Para ações de execução (abrir, tocar, criar, otimizar...), preencha "resposta" com uma confirmação curta no estilo J.A.R.V.I.S. Para "responder", dê a resposta completa à pergunta dele.
 Use a MEMÓRIA abaixo para entender apelidos e preferências dele."""
 
 
@@ -287,7 +287,7 @@ def conversar(historico, ao_pedaco=None, maximo=24) -> str:
 
     msgs = [{"role": "system", "content": sistema}] + mensagens_formatadas
     dados = {"model": MODELO, "messages": msgs, "stream": True, "keep_alive": MANTER,
-             "options": {"temperature": 0.7, "num_ctx": 8192}}
+             "options": {"temperature": 0.7, "num_ctx": 16384}}
     if "qwen3" in MODELO or "deepseek" in MODELO:
         dados["think"] = False
     try:
